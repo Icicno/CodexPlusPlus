@@ -175,6 +175,18 @@ python -m codex_session_delete check-update
 python -m codex_session_delete update
 ```
 
+从本地源码构建并强制覆盖安装（开发调试用）：
+
+```bash
+python -m codex_session_delete update --local
+```
+
+此命令从当前源码目录构建 `.whl` 并以 `--force-reinstall --no-deps` 方式安装，即使版本号未变化也会覆盖。适用于本地修改后快速部署。需要预先安装 `build` 包：
+
+```bash
+pip install build
+```
+
 更新流程：
 
 1. 请求 `https://api.github.com/repos/BigPizzaV3/CodexPlusPlus/releases/latest`。

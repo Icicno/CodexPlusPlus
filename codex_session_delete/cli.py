@@ -4,6 +4,7 @@ import argparse
 import os
 import subprocess
 import sys
+import tempfile
 import traceback
 from pathlib import Path
 
@@ -56,7 +57,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("watch-disable", help="Disable the watcher loop without removing the logon task")
 
     subparsers.add_parser("check-update", help="Check GitHub Releases for a newer Codex++ version")
-    subparsers.add_parser("update", help="Update Codex++ from the latest GitHub Release")
+    update_parser = subparsers.add_parser("update", help="Update Codex++ from the latest GitHub Release")
+    update_parser.add_argument("--local", action="store_true", help="Build from local source and force-install")
 
     add_launch_arguments(parser)
     return parser
@@ -189,7 +191,28 @@ def run_check_update() -> int:
     return 0
 
 
-def run_update() -> int:
+def run_update(local: bool = False) -> int:
+    if local:
+        project_root = updater.source_tree_root()
+        if project_root is None:
+            print("未检测到本地源码目录（需要 .git + pyproject.toml）。请在 Codex++ 源码根目录运行。")
+            return 1
+        print(f"从本地源码构建: {project_root}")
+        with tempfile.TemporaryDirectory(prefix="codex-plus-build-") as tmpdir:
+            wheel_path = updater.build_local_wheel(project_root, Path(tmpdir))
+            print(f"构建完成: {wheel_path.name}")
+            subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--force-reinstall", "--no-deps", str(wheel_path)],
+                check=True,
+            )
+            print("安装完成")
+        subprocess.run(
+            [sys.executable, "-m", "codex_session_delete", "setup"],
+            check=True,
+            cwd=str(Path.home()),
+        )
+        print("本地更新完成。")
+        return 0
     if updater.is_source_tree_mode():
         print("检测到当前正在从源码目录运行 Codex++，将迁移到 Release 安装。")
         release = updater.fetch_latest_release()
@@ -322,7 +345,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "check-update":
         return run_check_update()
     if args.command == "update":
-        return run_update()
+        return run_update(getattr(args, "local", False))
     return run_launch(args)
 
 

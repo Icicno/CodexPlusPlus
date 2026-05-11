@@ -153,5 +153,21 @@ def _perform_update_in_dir(release: Release, python_executable: str, download_di
     return UpdateResult(release=release, installed_path=package_path)
 
 
+def build_local_wheel(project_root: Path, output_dir: Path) -> Path:
+    """从本地源码构建 .whl 文件，返回 whl 路径。"""
+    if not (project_root / "pyproject.toml").exists():
+        raise UpdateError("本地源码目录缺少 pyproject.toml")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--outdir", str(output_dir)],
+        cwd=project_root,
+        check=True,
+    )
+    wheels = sorted(output_dir.glob("*.whl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not wheels:
+        raise UpdateError("构建未产出 .whl 文件，请确认已安装 build 包: pip install build")
+    return wheels[0]
+
+
 def safe_setup_cwd() -> Path:
     return Path.home()

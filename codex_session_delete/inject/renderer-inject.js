@@ -617,6 +617,10 @@
       removeDuplicateCodexPlusMenus(existing);
       return;
     }
+    if (!insertionPoint) {
+      removeDuplicateCodexPlusMenus(null);
+      return;
+    }
     const menu = document.createElement("div");
     menu.id = codexPlusMenuId;
     menu.dataset.codexPlusMenu = "true";
@@ -629,17 +633,11 @@
     indicator.dataset.codexBackendIndicator = "true";
     indicator.dataset.status = codexPlusBackendStatus.status || "checking";
     trigger.prepend(indicator);
-    const nativeButtonClass = insertionPoint?.nativeButtonClass || "codex-plus-trigger";
-    configureCodexPlusTrigger(menu, trigger, nativeButtonClass);
+    configureCodexPlusTrigger(menu, trigger, insertionPoint.nativeButtonClass);
     menu.appendChild(trigger);
-    if (insertionPoint) {
-      menu.className = "";
-      const safeBefore = insertionPoint.before?.parentElement === insertionPoint.parent ? insertionPoint.before : null;
-      insertionPoint.parent.insertBefore(menu, safeBefore);
-    } else {
-      menu.className = "codex-plus-menu-floating";
-      document.documentElement.appendChild(menu);
-    }
+    menu.className = "";
+    const safeBefore = insertionPoint.before?.parentElement === insertionPoint.parent ? insertionPoint.before : null;
+    insertionPoint.parent.insertBefore(menu, safeBefore);
     removeDuplicateCodexPlusMenus(menu);
   }
 
@@ -676,10 +674,10 @@
   function labelUnlockedPluginEntry(button) {
     const labelTextNode = Array.from(button.querySelectorAll("span, div")).reverse()
       .flatMap((node) => Array.from(node.childNodes))
-      .find((node) => node.nodeType === 3 && /^(插件|Plugins)( - 已解锁| - Unlocked)?$/i.test((node.nodeValue || "").trim()));
+      .find((node) => node.nodeType === 3 && /^(插件|Plugins)(\s*[-\/]\s*(已解锁|Unlocked|技能|Skills))?$/i.test((node.nodeValue || "").trim()));
     if (!labelTextNode) return;
     const current = (labelTextNode.nodeValue || "").trim();
-    labelTextNode.nodeValue = /^Plugins/i.test(current) ? "Plugins - Unlocked" : "插件 - 已解锁";
+    labelTextNode.nodeValue = /^Plugins/i.test(current) ? "Plugins / Skills" : "插件 / 技能";
   }
 
   function enablePluginEntry() {
